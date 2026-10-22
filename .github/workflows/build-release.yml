@@ -35,8 +35,31 @@ jobs:
           java-version: '21'
           cache: maven
 
+      # Spotless resolves the Eclipse formatter from download.eclipse.org. Skip it only while that p2 site is
+      # unavailable; the formatting check runs normally when the site is healthy.
+      - name: Check Eclipse p2 availability
+        id: eclipse
+        run: |
+          available=true
+          for version in 4.25 4.21; do
+            if ! curl -fsSL --max-time 15 \
+              "https://download.eclipse.org/eclipse/updates/${version}/p2.index" | grep -q 'metadata.repository.factory.order'; then
+              available=false
+            fi
+          done
+          echo "available=${available}" >> "${GITHUB_OUTPUT}"
+          if [ "${available}" = "false" ]; then
+            echo "::warning::Eclipse p2 is unavailable; skipping Spotless for this build."
+          fi
+
       - name: Build and test
-        run: mvn -s settings.xml -B -ntp -Dmarkdownlint.skip=true clean install
+        run: |
+          args=(-s settings.xml -B -ntp -Dmarkdownlint.skip=true)
+          if [ "${{ steps.eclipse.outputs.available }}" != "true" ]; then
+            args+=(-Dspotless.check.skip=true)
+          fi
+          args+=(clean install)
+          mvn "${args[@]}"
 
       - name: Upload binding jar
         uses: actions/upload-artifact@v4
