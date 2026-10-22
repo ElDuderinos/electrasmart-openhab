@@ -1,0 +1,99 @@
+name: Build and release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Create a GitHub release from this commit
+        required: false
+        type: boolean
+        default: false
+      tag:
+        description: Release tag, for example v5.2.0 (required when release is true)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build and test
+        run: mvn -s settings.xml -B -ntp -Dmarkdownlint.skip=true clean install
+
+      - name: Upload binding jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: electrasmart-jar
+          path: |
+            target/org.openhab.binding.electrasmart-*.jar
+            !target/*-sources.jar
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download binding jar
+        uses: actions/download-artifact@v4
+        with:
+          name: electrasmart-jar
+          path: dist
+
+      - name: Resolve and validate release tag
+        id: release
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            tag="${INPUT_TAG}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          if [ -z "${tag}" ]; then
+            echo "::error::Set the 'tag' input when creating a manual release."
+            exit 1
+          fi
+          jar="$(basename "$(find dist -maxdepth 1 -name '*.jar' -print -quit)")"
+          version="${jar#org.openhab.binding.electrasmart-}"
+          version="${version%.jar}"
+          if [ "${tag}" != "v${version}" ]; then
+            echo "::error::Tag ${tag} does not match the bundle version v${version}."
+            exit 1
+          fi
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release upload "${TAG}" dist/*.jar --clobber
+          else
+            gh release create "${TAG}" dist/*.jar \
+              --target "${GITHUB_SHA}" \
+              --title "${TAG}" \
+              --generate-notes
+          fi

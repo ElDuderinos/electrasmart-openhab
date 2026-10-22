@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven settings for building this binding outside of the openhab-addons repository.
+
+  openHAB core artifacts are hosted on the openHAB JFrog instance rather than Maven Central.
+  Use with: mvn -s settings.xml clean install
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <profiles>
+    <profile>
+      <id>openhab-repositories</id>
+      <repositories>
+        <repository>
+          <id>openhab-release</id>
+          <url>https://openhab.jfrog.io/artifactory/libs-release</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>openhab-snapshot</id>
+          <url>https://openhab.jfrog.io/artifactory/libs-snapshot</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>openhab-release-plugins</id>
+          <url>https://openhab.jfrog.io/artifactory/libs-release</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </pluginRepository>
+        <pluginRepository>
+          <id>openhab-snapshot-plugins</id>
+          <url>https://openhab.jfrog.io/artifactory/libs-snapshot</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>openhab-repositories</activeProfile>
+  </activeProfiles>
+
+</settings>

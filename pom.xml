@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.openhab.addons.bundles</groupId>
+    <artifactId>org.openhab.addons.reactor.bundles</artifactId>
+    <version>5.2.0</version>
+    <relativePath/>
+  </parent>
+
+  <artifactId>org.openhab.binding.electrasmart</artifactId>
+
+  <name>openHAB Add-ons :: Bundles :: Electra Smart Binding</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <version>${wiremock.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.13</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <!--
+        The parent finds the root of the openhab-addons reactor through the directory-maven-plugin, which needs
+        the reactor project. In this standalone checkout the static analysis configuration sits in ./tools, so
+        point basedirRoot here and disable the reactor lookup. When the bundle is staged into openhab-addons the
+        tools directory is absent, this profile stays inactive and the parent behaves normally.
+      -->
+      <id>standalone-build</id>
+      <activation>
+        <file>
+          <exists>tools/static-code-analysis/checkstyle/ruleset.properties</exists>
+        </file>
+      </activation>
+      <properties>
+        <basedirRoot>${project.basedir}</basedirRoot>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.commonjava.maven.plugins</groupId>
+            <artifactId>directory-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>directories</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>

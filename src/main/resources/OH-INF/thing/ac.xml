@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="electrasmart"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+	<thing-type id="ac">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="account"/>
+		</supported-bridge-type-refs>
+
+		<label>Electra Air Conditioner</label>
+		<description>An Electra air conditioner registered in the Electra Smart app.</description>
+		<semantic-equipment-tag>AirConditioner</semantic-equipment-tag>
+
+		<channels>
+			<channel id="power" typeId="power"/>
+			<channel id="operational-mode" typeId="operational-mode"/>
+			<channel id="target-temperature" typeId="target-temperature"/>
+			<channel id="indoor-temperature" typeId="indoor-temperature"/>
+			<channel id="fan-speed" typeId="fan-speed"/>
+			<channel id="swing-mode" typeId="swing-mode"/>
+			<channel id="shabat-mode" typeId="shabat-mode"/>
+			<channel id="turbo-mode" typeId="turbo-mode"/>
+			<channel id="sleep-function" typeId="sleep-function"/>
+			<channel id="ifeel" typeId="ifeel"/>
+			<channel id="last-contact" typeId="last-contact"/>
+		</channels>
+
+		<representation-property>mac</representation-property>
+
+		<config-description-ref uri="thing-type:electrasmart:ac"/>
+	</thing-type>
+
+</thing:thing-descriptions>

@@ -1,0 +1,11 @@
+target/
+*.class
+*.jar
+.classpath
+.project
+.settings/
+.idea/
+*.iml
+.vscode/
+.DS_Store
+src/main/history/
