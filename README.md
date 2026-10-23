@@ -199,6 +199,70 @@ sitemap electrasmart label="Electra Smart" {
 }
 ```
 
+## Amazon Alexa
+
+Alexa control requires the [openHAB Cloud Connector](https://www.openhab.org/addons/integrations/openhabcloud/) and the
+[openHAB Smart Home Skill](https://www.openhab.org/docs/ecosystem/alexa/). A `Thermostat` group works well for this
+binding: it exposes power, mode, target temperature and the measured room temperature as one endpoint.
+
+The binding has separate `power` and `operational-mode` channels, while Alexa expects a single `HeatingCoolingMode`.
+Use a functional group (no group type), a proxy item for the mode and two rules to keep it in sync. Only the proxy
+belongs to the Alexa group; the binding power and mode items stay outside it:
+
+```java
+Group               LivingRoom_Alexa               "Living Room A/C"                                  { alexa="Thermostat" }
+String              LivingRoom_AlexaThermostatMode "Living Room A/C Mode [%s]"      (LivingRoom_Alexa) { alexa="HeatingCoolingMode" [OFF="OFF", HEAT="HEAT", COOL="COOL", AUTO="AUTO"] }
+Number:Temperature  LivingRoom_AlexaTarget         "Living Room Target [%.0f °C]"    (LivingRoom_Alexa) { channel="electrasmart:ac:home:livingroom:target-temperature", alexa="TargetTemperature" [scale="Celsius", setpointRange="17:30"] }
+Number:Temperature  LivingRoom_AlexaIndoor         "Living Room Indoor [%.0f °C]"    (LivingRoom_Alexa) { channel="electrasmart:ac:home:livingroom:indoor-temperature", alexa="CurrentTemperature" [scale="Celsius"] }
+
+Switch              LivingRoom_AlexaPower          "Living Room Power"                { channel="electrasmart:ac:home:livingroom:power" }
+String              LivingRoom_AlexaMode           "Living Room Mode [%s]"            { channel="electrasmart:ac:home:livingroom:operational-mode" }
+```
+
+```java
+rule "Alexa: change Living Room A/C mode"
+when
+    Item LivingRoom_AlexaThermostatMode received command
+then
+    val requested = receivedCommand.toString.toUpperCase
+    if (requested == "OFF") {
+        LivingRoom_AlexaPower.sendCommand(OFF)
+    } else {
+        LivingRoom_AlexaMode.sendCommand(requested)
+    }
+end
+
+rule "Alexa: update Living Room A/C mode"
+when
+    System started or
+    Item LivingRoom_AlexaPower changed or
+    Item LivingRoom_AlexaMode changed
+then
+    if (LivingRoom_AlexaPower.state == OFF) {
+        LivingRoom_AlexaThermostatMode.postUpdate("OFF")
+    } else if (LivingRoom_AlexaPower.state == ON) {
+        val mode = LivingRoom_AlexaMode.state.toString
+        if (mode == "HEAT" || mode == "COOL" || mode == "AUTO") {
+            LivingRoom_AlexaThermostatMode.postUpdate(mode)
+        } else if (mode == "DRY" || mode == "FAN") {
+            // Alexa has no DRY or FAN thermostat mode; keep the endpoint in a usable cooling mode.
+            LivingRoom_AlexaThermostatMode.postUpdate("COOL")
+        }
+    }
+end
+```
+
+Setting a non-`OFF` mode sends the corresponding `operational-mode` command, which also turns the unit on. `OFF` uses
+the `power` channel. Alexa supports `OFF`, `HEAT`, `COOL` and `AUTO` for this endpoint. The binding's `DRY` and `FAN`
+modes remain available from openHAB; they are reported to Alexa as `COOL` because Alexa has no matching thermostat
+mode. The example uses
+Celsius; for a Fahrenheit system, change the labels to `°F` and use `scale="Fahrenheit"` and
+`setpointRange="63:86"` instead. Without `setpointRange`, Alexa accepts its wider default range and the binding clamps
+values to 17–30 °C.
+
+Fan speed and swing are not part of the thermostat endpoint. Expose them as separate items or endpoints if needed.
+After saving the items and rules, ask Alexa to discover devices.
+
 ## Building
 
 The binding is a standard openHAB 5.2 bundle and needs JDK 21 and Maven 3.9 or newer.
